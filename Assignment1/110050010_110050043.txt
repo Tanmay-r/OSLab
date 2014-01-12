@@ -1,0 +1,424 @@
+﻿Assignment 1
+
+
+1
+a. 
+cache-size        :6144KB
+address size        :36 bits physical, 48 bits virtual
+b.
+Commands :
+a) g++ q3.c
+b) ./a.out
+c) ps -A (get pid of process)
+d) gedit /proc/<pid of process>/limits
+                        soft limit        hard limit        units
+Max open files                1024                     4096                     files
+The soft limit is what is enforced and the user can raise it to up to a maximum of the hard limit.        
+        
+c.        Process Preemption
+        Process Preemption means to pause a currently running process when a new process with higher priority than the current process is ready to be run. 
+        When a process becomes ready to run, the CPU checks whether its priority is higher than the currently running process. If it is higher than the currently running process, then the current process is paused and the scheduler is invoked to select a new process to run (which is usually the process that became ready to run and which caused the previously running process to preempt). The preempted process is not suspended, it is just not using the CPU resources right now. 
+        A process can also be preempted when the time allotted to the process expires.
+
+
+        Sources:
+        1) http://oreilly.com/catalog/linuxkernel/chapter/ch10.html
+        2) http://en.wikipedia.org/wiki/Preemption_%28computing%29
+
+
+2
+Commands :
+a) g++ q2_1.cpp -o first
+b) ./first > /dev/null
+c) g++ q2_2.cpp -lm -o second
+d) ./second > /dev/null
+e) ps -A (get pid of process)
+        f) cat proc/<pid of process>/stat | awk '’{print $14}’ (to get user time)
+        g) cat proc/<pid of process>/stat | awk '’{print $15}' (to get kernel time)
+        
+For the first program, 
+                Time in user mode = 0 clock ticks
+                Time in kernel mode = 0 clock ticks
+        For the second program,
+                Time in user mode = 1 clock ticks
+                Time in kernel mode = 0 clock ticks
+        
+        Second program takes more time than the first program because of power function.
+        The kernel time is zero  because the output is printed to the /dev/null .The times are zero because number of system clock cycles required are less than the time required to run the program.
+Sources:
+1) http://man7.org/linux/man-pages/man5/proc.5.html        
+
+
+3)
+
+
+        Command  Used:
+        1) nice -n +5 ./first output file1 &
+2) nice -n +11 ./second output file2 &
+        
+        File used from proc filesystem:
+        proc/<pid of process>/status for getting voluntary and involuntary context switches
+
+
+        Command used to get percentage of cpu used:
+        ps -p <pid of process > -o %cpu %mem cmd
+        
+
+
+        a)
+        output_file1 :
+a's count : 398123008
+CPU percentage used : 33.1
+voluntary_ctxt_switches:    2053
+nonvoluntary_ctxt_switches:    2361
+
+
+output_file2:
+a's count :    234549248
+CPU percentage used : 19.6
+voluntary_ctxt_switches:    2434
+nonvoluntary_ctxt_switches:    754
+
+
+        b)
+        a)
+        output_file1 :
+a's count : 319389696
+CPU percentage used : 11.1
+voluntary_ctxt_switches:    1035
+nonvoluntary_ctxt_switches:    1315
+
+
+output_file2:
+a's count :    431181824
+CPU percentage used : 16.2
+voluntary_ctxt_switches:    5796
+nonvoluntary_ctxt_switches:    2138
+
+
+4
+a.
+        buffer_size         user time        system time        real time
+        1                0.792s                0.620s                1.481s
+        100                0.004s                0.024s                0.196s                        
+        1000                0.004s                0.000s                0.015s
+        5000                0.004s                0.000s                0.012s
+10000                0.004s                0.000s                0.013s
+50000                0.000s                0.000s                0.019s
+100000        0.000s                0.000s                0.012s
+500000        0.000s                0.000s                0.030s
+1000000        0.000s                0.004s                0.025s
+10000000        segmentation fault
+
+
+b.
+        buffer_size         user time        system time        real time
+        1                1.668s                6.756s                13.835s
+        100                0.020s                0.084s                10.548s                
+        1000                0.008s                0.032s                3.204s
+        5000                0.004s                0.024s                2.445s
+10000                0.004s                0.028s                2.478s
+50000                0.000s                0.024s                2.507s
+100000        0.004s                0.008s                3.549s
+500000        0.000s                0.020s                3.975s
+1000000        0.000s                0.012s                6.944s
+10000000        segmentation fault
+
+
+The time taken in case of writing to an output file is greater because the program actually writes to the file and stores the data. In case of /dev/null, the data is not written anywhere, it just a dumping position.
+Segmentation fault occurs because the stack to store the buffer is of size 8 MB.
+
+
+5
+a.        
+        States:
+        R = running or runnable
+        S = sleep
+        Z = zombie (completed but not reaped by parent)
+        T = stopped or traced
+        
+        Sources:
+        1) https://idea.popcount.org/2012-12-11-linux-process-states/
+
+
+b.        child 1 = zombie
+        child 2 = sleep
+        child 3 = runnable
+
+
+c.
+
+
+d.        While running a process in shell,  you can force the process in the  stopped state by pressing Ctrl+Z. This way, the process is forced to the background .
+
+
+6.
+a.        
+1.
+Command = pstree root
+OUTPUT
+init-+-NetworkManager---{NetworkManager}
+         |-accounts-daemon---{accounts-daemon}
+         |-acpid
+         |-apache2---5*[apache2]
+         |-at-spi-bus-laun---2*[{at-spi-bus-laun}]
+         |-atd
+         |-avahi-daemon---avahi-daemon
+         |-bamfdaemon---2*[{bamfdaemon}]
+         |-bluetoothd
+         |-colord---2*[{colord}]
+         |-console-kit-dae---64*[{console-kit-dae}]
+         |-cron
+         |-cupsd
+         |-2*[dbus-daemon]
+         |-dbus-launch
+         |-dconf-service---2*[{dconf-service}]
+         |-evince---4*[{evince}]
+         |-evinced---{evinced}
+         |-firefox-+-plugin-containe---3*[{plugin-containe}]
+         |             `-37*[{firefox}]
+         |-gconfd-2
+         |-gedit---2*[{gedit}]
+         |-geoclue-master
+         |-6*[getty]
+         |-gnome-keyring-d---6*[{gnome-keyring-d}]
+         |-gnome-terminal-+-bash---a.out---2*[a.out]
+         |                    |-bash---pstree
+         |                    |-gnome-pty-helpe
+         |                    `-3*[{gnome-terminal}]
+         |-goa-daemon---{goa-daemon}
+         |-gvfs-afc-volume---{gvfs-afc-volume}
+         |-gvfs-gdu-volume
+         |-gvfs-gphoto2-vo
+         |-gvfsd
+         |-gvfsd-burn
+         |-gvfsd-metadata
+         |-gvfsd-trash
+         |-hud-service---2*[{hud-service}]
+         |-indicator-appli---{indicator-appli}
+         |-indicator-datet---2*[{indicator-datet}]
+         |-indicator-messa---{indicator-messa}
+         |-indicator-print---2*[{indicator-print}]
+         |-indicator-sessi---2*[{indicator-sessi}]
+         |-indicator-sound---2*[{indicator-sound}]
+         |-irqbalance
+         |-lightdm-+-Xorg
+         |             |-lightdm-+-gnome-session-+-bluetooth-apple---2*[{bluetooth-apple}]
+         |             |             |                   |-compiz-+-sh---gtk-window-deco---2*[{gtk-window-deco}]
+         |             |             |                   |            `-3*[{compiz}]
+         |             |             |                   |-deja-dup-monito---2*[{deja-dup-monito}]
+         |             |             |                   |-gdu-notificatio---2*[{gdu-notificatio}]
+         |             |             |                   |-gnome-fallback----2*[{gnome-fallback-}]
+         |             |             |                   |-gnome-screensav---2*[{gnome-screensav}]
+         |             |             |                   |-gnome-settings----2*[{gnome-settings-}]
+         |             |             |                   |-nautilus---2*[{nautilus}]
+         |             |             |                   |-nm-applet---2*[{nm-applet}]
+         |             |             |                   |-polkit-gnome-au---2*[{polkit-gnome-au}]
+         |             |             |                   |-ssh-agent
+         |             |             |                   |-telepathy-indic---2*[{telepathy-indic}]
+         |             |             |                   |-update-notifier---2*[{update-notifier}]
+         |             |             |                   `-3*[{gnome-session}]
+         |             |             `-{lightdm}
+         |             `-2*[{lightdm}]
+         |-mission-control---2*[{mission-control}]
+         |-modem-manager
+         |-mysqld---16*[{mysqld}]
+         |-notify-osd---2*[{notify-osd}]
+         |-nscd---9*[{nscd}]
+         |-ntpd
+         |-polkitd---{polkitd}
+         |-pulseaudio-+-gconf-helper
+         |                `-2*[{pulseaudio}]
+         |-puppet
+         |-rpc.idmapd
+         |-2*[rpc.statd]
+         |-rpcbind
+         |-rsyslogd---3*[{rsyslogd}]
+         |-rtkit-daemon---2*[{rtkit-daemon}]
+         |-sshd
+         |-ubuntu-geoip-pr
+         |-udevd---2*[udevd]
+         |-udisks-daemon-+-udisks-daemon
+         |                   `-2*[{udisks-daemon}]
+         |-uml_switch
+         |-unity-applicati---2*[{unity-applicati}]
+         |-unity-files-dae---2*[{unity-files-dae}]
+         |-unity-lens-vide---{unity-lens-vide}
+         |-unity-music-dae---{unity-music-dae}
+         |-unity-musicstor---{unity-musicstor}
+         |-unity-panel-ser---2*[{unity-panel-ser}]
+         |-unity-scope-vid---2*[{unity-scope-vid}]
+         |-upowerd---2*[{upowerd}]
+         |-upstart-socket-
+         |-upstart-udev-br
+         |-whoopsie---{whoopsie}
+         |-winbindd---winbindd
+         |-zeitgeist-daemo---{zeitgeist-daemo}
+         |-zeitgeist-datah---{zeitgeist-datah}
+         `-zeitgeist-fts-+-cat
+                         `-{zeitgeist-fts}
+
+
+2.
+        Command  = pstree tanmayr  
+        This list is a subset of the output by the first case since the user program is initiated by the init process
+OUTPUT
+at-spi-bus-laun---2*[{at-spi-bus-laun}]
+
+
+bamfdaemon---2*[{bamfdaemon}]
+
+
+dbus-daemon
+
+
+dbus-launch
+
+
+dconf-service---2*[{dconf-service}]
+
+
+evince---3*[{evince}]
+
+
+evinced---{evinced}
+
+
+firefox-+-plugin-containe---3*[{plugin-containe}]
+            `-37*[{firefox}]
+
+
+gconfd-2
+
+
+gedit---2*[{gedit}]
+
+
+geoclue-master
+
+
+gnome-keyring-d---6*[{gnome-keyring-d}]
+
+
+gnome-terminal-+-bash---a.out---2*[a.out]
+                   |-bash---pstree
+                   |-gnome-pty-helpe
+                   `-3*[{gnome-terminal}]
+
+
+goa-daemon---{goa-daemon}
+
+
+gvfs-afc-volume---{gvfs-afc-volume}
+
+
+gvfs-gdu-volume
+
+
+gvfs-gphoto2-vo
+
+
+gvfsd
+
+
+gvfsd-burn
+
+
+gvfsd-metadata
+
+
+gvfsd-trash
+
+
+hud-service---2*[{hud-service}]
+
+
+indicator-appli---{indicator-appli}
+
+
+indicator-datet---2*[{indicator-datet}]
+
+
+indicator-messa---{indicator-messa}
+
+
+indicator-print---2*[{indicator-print}]
+
+
+indicator-sessi---2*[{indicator-sessi}]
+
+
+indicator-sound---2*[{indicator-sound}]
+
+
+gnome-session-+-bluetooth-apple---2*[{bluetooth-apple}]
+                  |-compiz-+-sh---gtk-window-deco---2*[{gtk-window-deco}]
+                  |            `-3*[{compiz}]
+                  |-deja-dup-monito---2*[{deja-dup-monito}]
+                  |-gdu-notificatio---2*[{gdu-notificatio}]
+                  |-gnome-fallback----2*[{gnome-fallback-}]
+                  |-gnome-screensav---2*[{gnome-screensav}]
+                  |-gnome-settings----2*[{gnome-settings-}]
+                  |-nautilus---2*[{nautilus}]
+                  |-nm-applet---2*[{nm-applet}]
+                  |-polkit-gnome-au---2*[{polkit-gnome-au}]
+                  |-ssh-agent
+                  |-telepathy-indic---2*[{telepathy-indic}]
+                  |-update-notifier---2*[{update-notifier}]
+                  `-3*[{gnome-session}]
+
+
+mission-control---2*[{mission-control}]
+
+
+notify-osd---2*[{notify-osd}]
+
+
+pulseaudio-+-gconf-helper
+               `-2*[{pulseaudio}]
+
+
+ubuntu-geoip-pr
+
+
+unity-applicati---2*[{unity-applicati}]
+
+
+unity-files-dae---2*[{unity-files-dae}]
+
+
+unity-lens-vide---{unity-lens-vide}
+
+
+unity-music-dae---{unity-music-dae}
+
+
+unity-musicstor---{unity-musicstor}
+
+
+unity-panel-ser---2*[{unity-panel-ser}]
+
+
+unity-scope-vid---2*[{unity-scope-vid}]
+
+
+zeitgeist-daemo---{zeitgeist-daemo}
+
+
+zeitgeist-datah---{zeitgeist-datah}
+
+
+zeitgeist-fts-+-cat
+                  `-{zeitgeist-fts}
+
+
+b.
+Command = pstree -s 26906
+init───gnome-terminal───bash───q_6b
+
+
+7.
+a.        Command = cat /proc/loadavg
+        Output = 0.47 0.87 1.18 2/408 27248
+b.        Output = 0.46 0.83 1.15 1/409 27252
+c.         The load averages differ because the  number of running processes changes, some running processes are completed and new procesess are started.

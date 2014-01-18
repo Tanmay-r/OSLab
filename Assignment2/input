@@ -1,0 +1,5 @@
+add_email tvr@can.com
+search_email tvr@can.com
+add_email tacs@can.com
+delete_domain can.com
+Quit

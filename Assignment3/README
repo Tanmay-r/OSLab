@@ -1,0 +1,17 @@
+Assignment 3(b)
+
+Tanmay Randhavane, 110050010
+Alok Yadav, 110050043
+
+Implemented section 1, 2, 3, 4, 5, 6 and 7
+
+Note: In run command, the commands in the file are executed in a seperate child process.
+
+Run make as :
+make -f Makefile
+
+Some test files are provided.
+1)	4b
+	To execute the run command
+2)	test.c and its executable test
+	To execute a file

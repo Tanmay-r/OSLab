@@ -1,0 +1,9 @@
+SRC=jash.c
+TARGET=jash
+CC= gcc
+
+
+$(TARGET): $(SRC)
+	$(CC) $(SRC) -o $(TARGET)
+clean:
+	rm -rf jash

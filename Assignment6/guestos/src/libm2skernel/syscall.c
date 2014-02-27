@@ -1,3 +1,4 @@
+
 /*
  *  Multi2Sim
  *  Copyright (C) 2007  Rafael Ubal Tena (raurte@gap.upv.es)
@@ -18,7 +19,7 @@
  */
 
 #include "m2skernel.h"
-
+#include <stdio.h>
 #include <unistd.h>
 #include <utime.h>
 #include <time.h>
@@ -821,113 +822,104 @@ int get_pid() {
 
 int handle_guest_syscalls() {
     int syscode = isa_regs->eax;
-    //printf("\nvalue : %d  value :%d\n",isa_regs->eax,syscall_code_get_instr_slice);
     int retval = 0;
-
- switch (syscode) {
-    	case syscall_code_get_pid:
-    	{
+    switch (syscode) {
+        case syscall_code_get_pid:
+        {
 
             retval=get_pid();
-    		break;
-    	}
+            break;
+        }
         case syscall_code_set_instr_slice:
         {
             int temp = isa_regs->ebx;
             isa_ctx->instr_slice = temp;
-            printf("instruction_slice: %d\n",isa_ctx->instr_slice);
+           // printf("instruction_slice: %d\n",isa_ctx->instr_slice);
             break;
         }
+
         case syscall_code_virtual_read:
         {
-            int u_id,oper, num_bytes,block_number, offset;
-            u_id = isa_ctx->uid;
-            oper = isa_regs->ebx;
-            num_bytes = isa_regs->ecx;
-            uint32_t mem_area = isa_regs->edx;
-            block_number = isa_regs->esi;
-            offset = isa_regs->edi;
-            printf("num_bytes : %d\n",num_bytes);
-            char * buf = (char*) malloc(sizeof(char)*(100));
-            printf("%d\n",strlen(buf));
-            int  disk_addr = (block_number-1) * 4 *1024 +  offset;
-            if(block_number > table_size || (offset + num_bytes) >= 4*1024 )
-                fatal("syscall virtual_read: block_number out of range");
-            if(disk_block_in_use[block_number] != u_id && disk_block_in_use[block_number]!= -1){
-                fatal("syscall virtual_read: cannot read specified block");
+            int uid = isa_ctx->uid;
+            int num_bytes = isa_regs->ebx;
+            uint32_t mem_area = isa_regs->ecx;
+            int block_number = isa_regs->edx;
+            int offset = isa_regs->esi;
+            char *buf = (char *) malloc (num_bytes * sizeof(char));
+            int  disk_addr = block_number * 4 *1024 +  offset;
+            if(block_number > table_size || (offset + num_bytes) >= 4*1024 ){
+                fatal("syscall virtual_read: block_number out of range");  
+                break;
+            } 
+            if (disk_block_in_use[block_number]!=-1 && disk_block_in_use[block_number]!=uid) {
+                fatal("virtual_read : disk block is not accessible to current user");
+                break;
+            }
+            FILE * fp = fopen("Sim_disk","rb+");
+            if (fp == NULL) {
+                fatal("virtual_read : could not access disk");
+                break;
             }
             else{
-                FILE *fp = fopen ("text.txt","rb+");  
-                if(fp){
-                    fwrite("here in virtual read",1,20,fp);
-                    fseek(fp,disk_addr,SEEK_SET);
-                    printf("%d\n",strlen(buf));
-                    printf("block_number : %d offset : %d disk_addr: %d num_bytes: %d\n",block_number,offset,disk_addr,num_bytes);
-                    fread(buf,1,num_bytes,fp);
-                    //mem_write(isa_mem, address, num_bytes, buf);
-                    printf("%d\n",strlen(buf));
-                    fflush(stdout);
-                }
-                else{
-                    fatal("error : cannot access disk");
-                }
-                fclose(fp);
+                fseek(fp,disk_addr,SEEK_SET);
+                fread(buf,1,num_bytes,fp);
+                mem_write(isa_mem,mem_area,num_bytes,buf);
             }
-            
+            fclose(fp);
+            fflush(stdout);
             break;
         }
+
         case syscall_code_virtual_write:
         {
-            int u_id,oper, num_bytes,block_number, offset;
-            u_id = isa_ctx->uid;
-            oper = isa_regs->ebx;
-            num_bytes = isa_regs->ecx;
-            uint32_t mem_area = isa_regs->edx;
-            block_number = isa_regs->esi;
-            offset = isa_regs->edi;
-            char * buf = (char*)malloc((num_bytes)*sizeof(char));
-            int  disk_addr = (block_number-1) * 4 *1024 +  offset;
-            if(block_number > table_size)
-                fatal("syscall virtual_read: block_number out of range");
-            if(disk_block_in_use[block_number] != u_id){
-                if(disk_block_in_use[block_number] == -1){
-                    disk_block_in_use[block_number] = u_id;
-                    FILE *fp = fopen ("text.txt","rb+");
-                    if(fp){
-                        //mem_read(isa_mem, address ,num_bytes, buf);
-                        fseek(fp,disk_addr,SEEK_SET);
-                        fwrite(buf,1,num_bytes,fp);
-                    }
-                    else{
-                        fatal("error : cannot access disk");
-                    }
-                }
-                else{
-                    fatal("syscall virtual_write: cannot read specified block");
-                }
+            int uid,oper, num_bytes,block_number, offset;
+            uid = isa_ctx->uid;
+            num_bytes = isa_regs->ebx;
+            uint32_t mem_area = isa_regs->ecx;
+            block_number = isa_regs->edx;
+            offset = isa_regs->esi;
+            char *buf = (char *) malloc (num_bytes * sizeof(char));
+            int  disk_addr = block_number * 4 *1024 +  offset;
+            if(block_number > table_size || disk_addr + num_bytes >= 4*1024){
+                fatal("syscall virtual_write: block_number out of range");
+                break;
+            }
+
+            if(disk_block_in_use[block_number] != uid && disk_block_in_use[block_number] != -1){
+                fatal("syscall virtual_write: cannot read specified block");
+                break;
+
+            }
+            FILE *fp = fopen ("Sim_disk","rb+");
+            if(fp == NULL){
+                fatal("syscall virtual_write : cannot access disk");
+                break;
             }
             else{
-                FILE *fp = fopen ("text.txt","rb+");
-                if(fp){
-                    //mem_read(isa_mem, address ,num_bytes, buf);
-                    fseek(fp,disk_addr,SEEK_SET);
-                    fwrite(buf,1,num_bytes,fp);
-                }
-                else{
-                    fatal("error : cannot access disk");
-                }
+                disk_block_in_use[block_number] = uid;
+                mem_read(isa_mem, mem_area ,num_bytes, buf);
+                //fatal("syscall virtual_read: block_number out of range");
+                fseek(fp,disk_addr,SEEK_SET);
+                fwrite(buf,1,num_bytes,fp);
             }
+            fclose(fp);
+            fflush(stdout);
             break;
         }
+
+
         default:
+        {
             if (syscode >= syscall_code_count) {
                 retval = -38;
-            } else {
+            } 
+            else {
                 fatal("not implemented system call '%s' (code %d) at 0x%x\n%s",
                         syscode < syscall_code_count ? syscall_name[syscode] : "",
                         syscode, isa_regs->eip, err_syscall_note);
             }
-
+            break;
+        }
     }
 
 	return retval;
@@ -948,7 +940,7 @@ void syscall_do() {
 
 
         //printf("\n In syscall.c +syscall_do(),**** val of syscode is %d and syscall_code_count is %d ",syscode,syscall_code_count);
-        //	        printf("\n \n ######### syscal_count val is %d####syscall_code_count);
+        //	        printf("\n \n ######### syscal_count val is %d####\n",syscall_code_count);
         /* Debug in syscall and call logs */
         syscall_debug("syscall '%s' (code %d, inst %lld, pid %d)\n",
                 syscode < syscall_code_count ? syscall_name[syscode] : "",
@@ -966,7 +958,6 @@ void syscall_do() {
 
         switch (syscode) {
 
-
                 /* 1 */
             case syscall_code_exit:
             {
@@ -974,6 +965,7 @@ void syscall_do() {
 
                 status = isa_regs->ebx;
                 syscall_debug("  status=0x%x\n", status);
+                // printf("exit code is %d\n",status);
                 ctx_finish(isa_ctx, status);
                 break;
             }
@@ -1200,6 +1192,7 @@ void syscall_do() {
                 struct ctx_t *child;
 
                 pid = isa_regs->ebx;
+                // printf("lalalalalal %d\n",pid);
                 pstatus = isa_regs->ecx;
                 options = isa_regs->edx;
                 syscall_debug("  pid=%d, pstatus=0x%x, options=0x%x\n",
@@ -1308,6 +1301,7 @@ void syscall_do() {
                 /* 20 */
             case syscall_code_getpid:
             {
+                printf("syscall 20 called\n");
                 retval = isa_ctx->pid;
                 break;
             }

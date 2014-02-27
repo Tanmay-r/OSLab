@@ -7,7 +7,7 @@ int main() {
 
 	
 /* here, do your time-consuming job */
-	syscall(401,20);
+	syscall(401,10);
 
 	int i = 0;
 	int a;

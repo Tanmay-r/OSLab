@@ -40,7 +40,6 @@
 #include <errno.h>
 #include <gpukernel.h>
 #include <sys/time.h>
-#include <stdlib.h>
 
 
 /* Some forward declarations */
@@ -50,9 +49,9 @@ struct fd_t;
 int instr_slice;
 int * disk_block_in_use;
 int table_size;
+
 /* Maximum length for paths */
 #define MAX_PATH_SIZE  200
-
 
 
 

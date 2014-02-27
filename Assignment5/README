@@ -1,0 +1,13 @@
+Tanmay Randhavane 110050010
+Alok Yadav
+
+To compile - 
+g++ asgn5.cpp
+
+To run -
+./a.out
+
+and select the desired scheduler option.
+
+Output format - 
+List of events and a summary of scheduler.

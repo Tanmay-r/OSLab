@@ -1,0 +1,6 @@
+run 4b
+sleep 10 &
+ls > output
+ls >> output
+ls | wc
+ps | wc

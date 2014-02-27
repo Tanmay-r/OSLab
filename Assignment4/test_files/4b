@@ -1,0 +1,6 @@
+./test < out
+echo "abc"
+echo "abc"
+echo "abc"
+ls
+ls

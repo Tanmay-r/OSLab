@@ -1,0 +1,29 @@
+Assignment 4
+
+Tanmay Randhavane, 110050010
+Alok Yadav, 110050043
+
+Implemented following sections
+3 
+	i (input redirection)
+	ii (output redirection)
+	iii (output redirection with append) 
+	iv (background process) 
+	v (pipelined process)
+
+4 
+	ii (Action of Ctrl+C)
+	iii (I/O redirection)
+	iv (Concurrent Execution)
+	v (Piped Execution)
+
+5 	exit command
+
+Run make as :
+make -f Makefile
+
+Some test files are provided.
+1)	4b
+	To execute the run command
+2)	commands
+	Some of the commands which were successfully run

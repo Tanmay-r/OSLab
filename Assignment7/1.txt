@@ -1,2 +1,3 @@
-0, message, 0
-0, message2, 1
+0, message, 1
+0, message2, 2
+0, message3, 3

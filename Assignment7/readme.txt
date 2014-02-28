@@ -3,6 +3,6 @@
 
 Assignment 7
 
-Command to run = g++ -pthread pthread.cpp -o pthread
+Command to run = g++ -pthread ipc.cpp -o ipc
 
 

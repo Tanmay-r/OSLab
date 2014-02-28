@@ -8,6 +8,7 @@ void* threadCall(void* arg){
 	//cout << __LINE__ << endl;
 	a = 17;
 	cout << "a in thread = " << a << endl;
+	pthread_exit(NULL);
 }
 int main(){
 	cout << "a = " << a << endl;
@@ -18,4 +19,5 @@ int main(){
 	a = 23;
 	cout << "a in main = " << a << endl;
 	pthread_join(thread, NULL);
+	pthread_exit(NULL);
 }

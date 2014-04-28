@@ -1,3 +1,15 @@
-Message received: 0, 2,  message2
+Line NO-0 : 199
+line-0  = 0, message, 1
+live = 0
+dead = 0
+line-1  = 1, null, 0
+reqst_type : 0
+Message sent: 0, 1,  message
+waiting  = 1
+dead = 3
+reqst_type : 1
+Line NO-0 : 202
+Line NO : 206
 Message received: 0, 1,  message
-Message received: 0, 3,  message3
+recvId  = 1
+recvId later = 1 flag = 1

@@ -57,16 +57,12 @@ pthread_cond_t buffer_overflow_cv = PTHREAD_COND_INITIALIZER;
 pthread_cond_t message_handler_cv = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t message_handler_blocked_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t message_handler_blocked_cv = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
-
 
 //shared data
 queue<message> request_buffer;
 vector<message> message_buffer(MAX_BUFFER_SIZE);
 int buffer_size;
 int receive_ready[NUM_USERS];
-int write_ready[NUM_USERS];
 message message_container[NUM_USERS];
 int message_handler_blocked;
 
@@ -76,6 +72,7 @@ void* user_process(void* arg){
    	my_data = (process_data *) arg;
    	int thread_id = my_data->thread_id;
    	string file_name = my_data->file_name;
+   	//cout << __LINE__ << endl;
    	//read file line by line
    	//cout << "user process = " << thread_id << endl;
 	string line;
@@ -92,8 +89,7 @@ void* user_process(void* arg){
 
 		//send request
 		if(request.type == 0){
-			printf("line-0  = %s\n", line.c_str());
-			fflush(stdout);
+			cout << "line-0 " << line << endl;
 			pthread_mutex_lock(&request_buffer_mutex);
 			request_buffer.push(request);
 			if(request_buffer.size() == 1){
@@ -103,8 +99,7 @@ void* user_process(void* arg){
 		}
 		//receive request
 		else if(request.type == 1){
-			printf("line-1  = %s\n", line.c_str());
-			fflush(stdout);
+			cout << "line-1 " << line << endl;
 			pthread_mutex_lock(&request_buffer_mutex);
 			//cout << "receive request " << endl;
 			request_buffer.push(request);
@@ -114,23 +109,17 @@ void* user_process(void* arg){
 			pthread_mutex_unlock(&request_buffer_mutex);
 
 			pthread_mutex_lock(&message_container_mutex[thread_id]);
-				receive_ready[thread_id] = 1;
-			//if(write_ready[thread_id] != 0){
-				//printf("recvId  = %d\n", recvId);
-				printf("waiting  = %d\n", thread_id);
-				fflush(stdout);
-				pthread_cond_wait(&message_container_cv[thread_id], &message_container_mutex[thread_id]);
-				//cout << __LINE__ << endl;
-				receive_ready[thread_id] = 0;
-				printf("waiting later = %d\n", thread_id);
-				fflush(stdout);
-			//}
+			receive_ready[thread_id] = 1;
+			cout << "waiting  = " << thread_id << endl;
+			pthread_cond_wait(&message_container_cv[thread_id], &message_container_mutex[thread_id]);
+			//cout << __LINE__ << endl;
+			receive_ready[thread_id] = 0;
+			cout << "waiting later = " << thread_id << endl;
 			//cout"received message = %d, %s\n", thread_id, (message_container[thread_id].msg).c_str());
 			pthread_mutex_unlock(&message_container_mutex[thread_id]);
 		}
-		printf("live = %d\n", thread_id);
+
 	}
-	printf("dead = %d\n", thread_id);
 	pthread_exit(NULL);
 }
 
@@ -147,7 +136,6 @@ void* ipc_request_handler(void* arg){
 			//cout << __LINE__ << endl;
 			message rqst = request_buffer.front();
 			//cout << __LINE__ << endl;
-			printf("reqst_type : %d\n",rqst.type);
 			request_buffer.pop();
 			if(rqst.type == 0){
 				pthread_mutex_lock(&message_buffer_mutex);
@@ -159,9 +147,9 @@ void* ipc_request_handler(void* arg){
 				message_buffer[buffer_size] = rqst;
 				buffer_size++;
 				//cout << "buffer_size later= " << buffer_size << endl;
-				printf("Message sent: %d, %d, %s\n", rqst.sender_id,rqst.receiver_id,rqst.msg.c_str());
-				fflush(stdout);
-				if(buffer_size >= 1){
+				cout << "Message sent: " << rqst.sender_id << ",";
+				cout << rqst.receiver_id << "," << rqst.msg << endl;
+				if(buffer_size == 1){
 					//cout << __LINE__ << endl;
 					pthread_cond_signal(&message_handler_cv);
 				}
@@ -169,11 +157,9 @@ void* ipc_request_handler(void* arg){
 			}
 			else if(rqst.type == 1){
 				//cout << "endl " << endl;
-
 				pthread_mutex_lock(&message_handler_blocked_mutex);
 				if(message_handler_blocked == 1){
 					message_handler_blocked = 0;
-					printf("Line NO Handler : %d\n",__LINE__ );
 					pthread_cond_signal(&message_handler_blocked_cv);
 				}
 				pthread_mutex_unlock(&message_handler_blocked_mutex);
@@ -188,59 +174,45 @@ void* ipc_request_handler(void* arg){
 void* ipc_message_handler(void* arg){
 	//cout << __LINE__ << endl;
 	int flag = 0;
-	//pthread_mutex_lock(&message_handler_blocked_mutex);
-
-	//pthread_mutex_unlock(&message_handler_blocked_mutex);
+	pthread_mutex_lock(&message_handler_blocked_mutex);
+	message_handler_blocked = 0;
+	pthread_mutex_unlock(&message_handler_blocked_mutex);
 	while(1){
 		//cout << __LINE__ << endl;
 		pthread_mutex_lock(&message_buffer_mutex);
 		if(buffer_size == 0){
 			//cout << __LINE__ << endl;
-			printf("Line NO-0 : %d\n",__LINE__ );
 			pthread_cond_wait(&message_handler_cv, &message_buffer_mutex);
 			//cout << __LINE__ << endl;
-			printf("Line NO-0 : %d\n",__LINE__ );
 		}
 		for(int i = 0; i < buffer_size; i++){
 			int recvId = message_buffer[i].receiver_id;
-			printf("Line NO : %d\n",__LINE__ );
-			fflush(stdout);
+			//cout << __LINE__ << endl;
 			pthread_mutex_lock(&message_container_mutex[recvId]);
 			if(receive_ready[recvId] == 1){
-				printf("Message received: %d, %d, %s\n", message_buffer[i].sender_id,recvId,message_buffer[i].msg.c_str());
-				fflush(stdout);
+				cout << "Message received: " << message_buffer[i].sender_id << ",";
+				cout << recvId << "," << message_buffer[i].msg << endl;
 				message_container[recvId] = message_buffer[i];
 				message_buffer.erase(message_buffer.begin()+i);
 				buffer_size--;
-
+				//cout << << endl;
 				//printf("recvId = %d\n", recvId);
-				printf("recvId  = %d\n", recvId);
-				fflush(stdout);
-				write_ready[recvId] = 1;
+				cout << "recvId = " << recvId << endl;
 				pthread_cond_signal(&message_container_cv[recvId]);
-
 				//printf("recvId later = %d\n", recvId);
-				//write_ready[recvId] = 0;
+				cout << "recvId later= " << recvId << endl;
 				flag = 1;
-				printf("recvId later = %d flag = %d\n", recvId ,flag);
-				fflush(stdout);
 				break;
 			}
 			pthread_mutex_unlock(&message_container_mutex[recvId]);
 		}
-		if(flag == 0 ){
-			if(request_buffer.size()!=0){
-				printf("flag-0\n");
-				fflush(stdout);
-				//cout << __LINE__ << endl;
-				pthread_mutex_lock(&message_handler_blocked_mutex);
-				message_handler_blocked = 1;
-				pthread_cond_wait(&message_handler_blocked_cv, &message_handler_blocked_mutex);
-				printf("Line NO Blocked : %d\n",__LINE__ );
-				pthread_mutex_unlock(&message_handler_blocked_mutex);
-			}
-			else{
-			}
+		if(flag == 0){
+			cout << "flag-0 " << endl;
+			//cout << __LINE__ << endl;
+			pthread_mutex_lock(&message_handler_blocked_mutex);
+			message_handler_blocked = 1;
+			pthread_cond_wait(&message_handler_blocked_cv, &message_handler_blocked_mutex);
+			pthread_mutex_unlock(&message_handler_blocked_mutex);
 		}
 		flag = 0;
 		pthread_mutex_unlock(&message_buffer_mutex);
@@ -256,11 +228,10 @@ int main (){
 
    	for(int i = 0; i < NUM_USERS; i++){
    		receive_ready[i] = 0;
-   		write_ready[i] = 0;
    	}
 
 	buffer_size = 0;
-	message_handler_blocked = 0;
+
 	// Initialize and set thread detached attribute
    	pthread_attr_init(&attr);
    	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
